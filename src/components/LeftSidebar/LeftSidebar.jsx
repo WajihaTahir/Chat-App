@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import "./LeftSidebar.css";
 import assets from "../../assets/assets";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +27,8 @@ const LeftSidebar = () => {
     setChatUser,
     setMessagesId,
     messagesId,
+    chatVisible,
+    setChatVisible,
   } = useContext(AppContext);
   const [user, setUser] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -63,8 +65,24 @@ const LeftSidebar = () => {
   const addChat = async () => {
     const messagesRef = collection(db, "messages");
     const chatsRef = collection(db, "chats");
+
     try {
-      const newMessageRef = doc(messagesRef); // Create a new document reference in the "messages" collection
+      // Check if chat already exists between the current user and the selected user
+      const userChatsRef = doc(chatsRef, userData.id);
+      const userChatsSnapshot = await getDoc(userChatsRef);
+      if (userChatsSnapshot.exists) {
+        const userChatsData = userChatsSnapshot.data();
+        const existingChat = userChatsData.chatsData.find(
+          (chat) => chat.rId === user.id
+        );
+        if (existingChat) {
+          // Chat already exists, do not create a new one
+          return;
+        }
+      }
+
+      // Create a new document reference in the "messages" collection
+      const newMessageRef = doc(messagesRef);
       await setDoc(newMessageRef, {
         createAt: serverTimestamp(),
         messages: [],
@@ -98,11 +116,31 @@ const LeftSidebar = () => {
         },
         { merge: true }
       );
+      const uSnap = await getDoc(doc(db, "users", user.id));
+      const uData = uSnap.data();
+      setChat({
+        messagesId: newMessageRef.id,
+        lastMessage: "",
+        rId: user.id,
+        updatedAt: Date.now(),
+        messageSeen: true,
+        userData: uData,
+      });
+      setShowSearch(false);
+      setChatVisible(true);
     } catch (error) {
       toast.error(error.message);
       console.error(error);
     }
   };
+
+  const uniqueChatData = chatData.reduce((unique, item) => {
+    if (!unique.some((chat) => chat.rId === item.rId)) {
+      unique.push(item);
+    }
+    return unique;
+  }, []);
+
   const setChat = async (item) => {
     try {
       setMessagesId(item.messageId);
@@ -117,12 +155,25 @@ const LeftSidebar = () => {
       await updateDoc(userChatsRef, {
         chatsData: userChatsData.chatsData,
       });
+      setChatVisible(true);
     } catch (error) {
       toast.error(error.message);
     }
   };
+
+  useEffect(() => {
+    const updateChatUserData = async () => {
+      if (chatUser) {
+        const userRef = doc(db, "users", chatUser.userData.id);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        setChatUser((prev) => ({ ...prev, userData: userData }));
+      }
+    };
+    updateChatUserData();
+  }, [chatData]);
   return (
-    <div className="ls">
+    <div className={`ls ${chatVisible ? "hidden" : ""}`}>
       <div className="ls-top">
         <div className="ls-nav">
           <img src={assets.logo} alt="" className="logo" />
@@ -151,7 +202,7 @@ const LeftSidebar = () => {
             <p>{user.name}</p>
           </div>
         ) : (
-          chatData.map((item, index) => (
+          uniqueChatData.map((item, index) => (
             <div
               onClick={() => setChat(item)}
               key={index}
