@@ -6,6 +6,7 @@ import {
   arrayUnion,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -19,7 +20,14 @@ import { toast } from "react-toastify";
 
 const LeftSidebar = () => {
   const navigate = useNavigate();
-  const { userData } = useContext(AppContext);
+  const {
+    userData,
+    chatData,
+    chatUser,
+    setChatUser,
+    setMessagesId,
+    messagesId,
+  } = useContext(AppContext);
   const [user, setUser] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
 
@@ -32,8 +40,15 @@ const LeftSidebar = () => {
         const q = query(userRef, where("username", "==", input.toLowerCase()));
         const querySnap = await getDocs(q);
         if (!querySnap.empty && querySnap.docs[0].data().id !== userData.id) {
-          console.log(querySnap.docs[0].data());
-          setUser(querySnap.docs[0].data());
+          let userExist = false;
+          chatData.map((user) => {
+            if (user.rId === querySnap.docs[0].data().id) {
+              userExist = true;
+            }
+          });
+          if (!userExist) {
+            setUser(querySnap.docs[0].data());
+          }
         } else {
           setUser(null);
         }
@@ -88,6 +103,24 @@ const LeftSidebar = () => {
       console.error(error);
     }
   };
+  const setChat = async (item) => {
+    try {
+      setMessagesId(item.messageId);
+      setChatUser(item);
+      const userChatsRef = doc(db, "chats", userData.id);
+      const userChatsSnapshot = await getDoc(userChatsRef);
+      const userChatsData = userChatsSnapshot.data();
+      const chatIndex = userChatsData.chatsData.findIndex(
+        (c) => c.messageId === item.messageId
+      );
+      userChatsData.chatsData[chatIndex].messageSeen = true;
+      await updateDoc(userChatsRef, {
+        chatsData: userChatsData.chatsData,
+      });
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
   return (
     <div className="ls">
       <div className="ls-top">
@@ -118,17 +151,23 @@ const LeftSidebar = () => {
             <p>{user.name}</p>
           </div>
         ) : (
-          Array(12)
-            .fill("")
-            .map((item, index) => (
-              <div key={index} className="friends">
-                <img src={assets.profile_img} alt="" />
-                <div>
-                  <p>Richard Sanford</p>
-                  <span>Hello, How are you?</span>
-                </div>
+          chatData.map((item, index) => (
+            <div
+              onClick={() => setChat(item)}
+              key={index}
+              className={`friends ${
+                item.messageSeen || item.messageId === messagesId
+                  ? ""
+                  : "border"
+              }`}
+            >
+              <img src={item.userData.avatar} alt="" />
+              <div>
+                <p>{item.userData.name}</p>
+                <span>{item.lastMessage}</span>
               </div>
-            ))
+            </div>
+          ))
         )}
       </div>
     </div>
