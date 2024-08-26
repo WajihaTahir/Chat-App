@@ -6,7 +6,7 @@ Created a chat app using Reactjs and Firebase for storing the users data collect
 
 <img width="1277" alt="Screenshot 2024-08-26 at 2 04 37 PM" src="https://github.com/user-attachments/assets/10766302-5827-4d5d-b047-7e66b99b8e18">
 
-<h2>Chat Page</h2>
+<h2>Chat Page:</h2>
 
 <img width="1313" alt="Screenshot 2024-08-26 at 1 49 14 PM" src="https://github.com/user-attachments/assets/da8324b8-ec8f-4493-850c-db63e07d4f97">
 
