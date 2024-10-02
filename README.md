@@ -10,7 +10,7 @@ Created a chat app using Reactjs and Firebase for storing the users data collect
 
 <img width="1313" alt="Screenshot 2024-08-26 at 1 49 14 PM" src="https://github.com/user-attachments/assets/da8324b8-ec8f-4493-850c-db63e07d4f97">
 
-The app displays the time of the messages and online status of the users as well. The frequent/recent chat users are automatically added on the left side. You can also send images in the conversation. 
+The app displays the time of the messages and online status of the users as well. The frequent/recent chat users are automatically added on the left side. You can also send images in the chat conversation. 
 
 <h2>Technologies Used:</h2>
 
